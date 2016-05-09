@@ -1,0 +1,16 @@
+<?php
+
+/**
+ * @file
+ * Main file of diplome user module.
+ */
+
+/**
+ * @param $form
+ * @param $form_state
+ * @param $form_id
+ */
+function diplom_group_form_alter(&$form, &$form_state, $form_id) {
+  $a = 1;
+  dpm($form_id);
+}

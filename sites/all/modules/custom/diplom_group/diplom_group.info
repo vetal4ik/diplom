@@ -1,0 +1,5 @@
+name = Diplom group
+description = "Provide functional to user"
+package = Diplome module
+core = 7.x
+

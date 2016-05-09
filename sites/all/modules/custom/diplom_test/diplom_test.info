@@ -1,0 +1,5 @@
+name = Diplom test
+description = Provide integration with Quiz
+package = Diplome module
+core = 7.x
+

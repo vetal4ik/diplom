@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @file
+ * Main file of diplome user module.
+ */
+
+/**
+ * @param $form
+ * @param $form_state
+ * @param $form_id
+ */
+function diplom_user_form_alter(&$form, &$form_state, $form_id) {
+  $a = 1;
+  dpm($form_id);
+}
+
+
+function diplom_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
+  foreach (element_children($form['account']) as $field) {
+    $form['account'][$field]['#description'] = '';
+  }
+  $form['account']['roles']['#access'] = TRUE;
+  dpm($form);
+}

@@ -1,0 +1,109 @@
+<?php
+
+/**
+ * @file
+ * Main file of diplome user module.
+ */
+
+define('GROUP_ATTESTATION_FIELD', 'field_attestation_test');
+define('GROUP_SKILL_FIELD', 'field_skill_test');
+
+/**
+ * Implements hook_ctools_plugin_directory().
+ */
+function diplom_test_ctools_plugin_directory($owner, $plugin_type) {
+  if ($owner == 'ctools' && $plugin_type == 'content_types') {
+    return 'plugins/content_types';
+  }
+}
+
+/**
+ * Implements hook_permission().
+ */
+function diplom_test_permission() {
+  return array(
+    'diplom_test_settings' => array(
+      'title' => t('Diplom test'),
+      'description' => t('Administer node Quiz settings.'),
+    ),
+  );
+}
+
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function diplom_test_form_quiz_node_form_alter(&$form, &$form_state, $form_id) {
+  if (!empty($form_state['build_info']['group'])) {
+    $group = $form_state['build_info']['group'];
+    $wrapper = entity_metadata_wrapper('group', $group);
+    $form['actions']['submit']['#submit'][] = 'diplom_test_quiz_add_test_form_submit';
+  }
+
+
+
+  if (empty($form['nid']['#value'])) {
+    $dissable_fields = array(
+      'taking',
+      'remember_settings',
+      'quiz_availability',
+      'summaryoptions',
+      'resultoptions',
+    );
+
+    $group = entity_load('group', array(2));
+    if (!empty($group)) {
+      $group = reset($group);
+    }
+
+
+
+
+  }
+  else {
+    $dissable_fields = array(
+      'taking',
+      'remember_settings',
+      'quiz_availability',
+//      'summaryoptions',
+//      'resultoptions',
+    );
+  }
+  foreach ($dissable_fields as $field) {
+    $form[$field]['#access'] = FALSE;
+  }
+}
+
+/**
+ * Form submit to add test in group.
+ */
+function diplom_test_quiz_add_test_form_submit(&$form, &$form_state) {
+  if (!empty($form_state['build_info']['group'])) {
+    $group = entity_metadata_wrapper('group', $form_state['build_info']['group']);
+    $test = entity_metadata_wrapper('node', $form_state['node']);
+    $test_id = $test->nid->value();
+    $test_type = $test->field_test_type->value();
+    $field_name = "field_{$test_type}_test";
+    $group->{$field_name}->set($test_id);
+    $group->save();
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function diplom_test_form_multichoice_node_form_alter(&$form, &$form_state) {
+  $i = 0;
+  $form['alternatives']['settings']['#access'] = FALSE;
+  while(isset($form['alternatives'][$i])) {
+    $form['alternatives'][$i]['advanced']['feedback_if_chosen']['#access'] = FALSE;
+    $form['alternatives'][$i]['advanced']['helper']['#access'] = FALSE;
+    $i++;
+  }
+//  $type = $form['#node']->type;
+//  if (array_key_exists($type, _quiz_question_get_implementations())) {
+//    $question = _quiz_question_get_instance($form['#node']);
+//    $quiz_question_form = $question->getNodeForm($form_state);
+//    $form = array_merge($quiz_question_form, $form);
+//  }
+}

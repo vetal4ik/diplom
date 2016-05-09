@@ -1,0 +1,5 @@
+name = Diplom user
+description = "Provide functional to user"
+package = Diplome module
+core = 7.x
+
