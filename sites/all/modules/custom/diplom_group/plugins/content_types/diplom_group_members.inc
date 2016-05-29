@@ -7,11 +7,11 @@
 
 // Read by ctools.
 $plugin = array(
-  'title' => t('Create question'),
-  'description' => t('Form to create question.'),
-  'content_types' => array('diplom_question_create'),
+  'title' => t('Group members'),
+  'description' => t('View with group members.'),
+  'content_types' => array('diplom_group_members'),
   'category' => array(t('Diplom'), -9),
-  'render callback' => 'diplom_create_question_render',
+  'render callback' => 'diplom_group_members_render',
   'required context' => new ctools_context_required(t('Group'), 'group'),
 );
 
@@ -31,23 +31,12 @@ $plugin = array(
  * @return object
  *   Rendered pane.
  */
-function diplom_create_question_render($subtype, $conf, $args, $context) {
+function diplom_group_members_render($subtype, $conf, $args, $context) {
   $group = $context->data;
-
-  // Create object to create question.
-  module_load_include('inc', 'node', 'node.pages');
-  $node = new stdClass;
-  $node->type = 'multichoice';
-  $node->language = LANGUAGE_NONE;
-
-  // Necessary form state args to build form.
-  $form_state = array();
-  $form_state['build_info'] = array(
-    'args' => array($node),
-    'group' => $group,
-  );
-
-  $content_pane = new stdClass();
-  $content_pane->content = drupal_build_form('quiz_node_form', $form_state);
-  return $content_pane;
+  $view = views_embed_view('group_members', 'group_members_pane', $group->gid);
+  if (!empty($view)) {
+    $content_pane = new stdClass();
+    $content_pane->content = $view;
+    return $content_pane;
+  }
 }

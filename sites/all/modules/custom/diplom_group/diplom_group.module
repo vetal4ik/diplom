@@ -6,11 +6,170 @@
  */
 
 /**
- * @param $form
- * @param $form_state
- * @param $form_id
+ * Implements hook_ctools_plugin_directory().
  */
-function diplom_group_form_alter(&$form, &$form_state, $form_id) {
-  $a = 1;
-  dpm($form_id);
+function diplom_group_ctools_plugin_directory($module, $plugin) {
+  if ($module == 'ctools' && !empty($plugin)) {
+    return "plugins/{$plugin}";
+  }
+}
+
+
+/**
+ * Implements hook_action_info().
+ */
+function diplom_group_action_info() {
+  $actions = array();
+  $actions['diplom_group_add_student'] = array(
+    'type' => 'user',
+    'label' => t('Add student to groups.'),
+    'configurable' => FALSE,
+    'vbo_configurable' => TRUE,
+    'behavior' => array('views_property'),
+  );
+  $actions['diplom_group_remove_student'] = array(
+    'type' => 'user',
+    'label' => t('Remove student to groups.'),
+    'configurable' => FALSE,
+    'vbo_configurable' => TRUE,
+    'behavior' => array('views_property'),
+  );
+  return $actions;
+}
+
+function diplom_group_add_student_form($context) {
+  return diplom_group_form();
+}
+function diplom_group_remove_student_form($context) {
+  return diplom_group_form();
+}
+function diplom_group_add_student_submit($form, $form_state) {
+  return array('user_group' => $form_state['values']['user_group']);
+}
+function diplom_group_remove_student_submit($form, $form_state) {
+  return array('user_group' => $form_state['values']['user_group']);
+}
+
+
+function diplom_group_form() {
+  global $user;
+  $form = array();
+  $groups = diplom_group_user_group($user->uid, 'teacher');
+  $form['user_group'] = array(
+      '#type' => 'select',
+      '#title' => t('Choose group'),
+      '#options' => $groups,
+      '#required' => TRUE,
+      '#default_value' => !empty($options['user_group']) ? $options['user_group'] : '',
+  );
+  return $form;
+}
+
+function diplom_group_add_student($studend, $context) {
+  $group = group_load($context['user_group']);
+  $values = array(
+    'roles' => array('student' => 'student'),
+    'joined_on' => REQUEST_TIME,
+  );
+  $group->addMember($studend->uid, $values);
+}
+
+function diplom_group_remove_student($studend, $context) {
+  $group = group_load($context['user_group']);
+  $group->removeMember($studend->uid);
+}
+
+
+
+
+
+function diplom_group_user_group($uid, $role_name = NULL) {
+  $query = db_select('groups', 'g');
+  $query->innerJoin('group_membership', 'gm', 'gm.gid = g.gid');
+//  $query->condition('gm.uid', $uid);
+//  if (!empty($role_name)) {
+//    $query->innerJoin('group_membership_role', 'gmr', 'gm.mid = gmr.mid');
+//    $query->condition('gmr.role', $role_name);
+//  }
+  $query->fields('g', array('gid', 'title'));
+  $results = array();
+  $request = $query->execute();
+  while ($result = $request->fetchAssoc()) {
+    $gid = $result['gid'];
+    $title = $result['title'];
+    $results[$gid] = $title;
+  }
+  return $results;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+function diplom_group_form_feedback_node_form_alter(&$form, &$form_state) {
+  if (!empty($form_state['build_info']['group'])) {
+    $form['actions']['submit']['#submit'][] = 'diplom_group_add_feedback_form_submit';
+  }
+  $form['#validate'][] = 'diplom_group_add_feedback_form_validate';
+}
+
+function diplom_group_add_feedback_form_validate(&$form, &$form_state) {
+  $values = $form_state['values'];
+  $field_feedback_lang = $form['field_feedback']['#language'];
+  $field_from_lang = $form['field_feedback'][$field_feedback_lang][0]['field_feedback_from']['#language'];
+  $field_to_lang = $form['field_feedback'][$field_feedback_lang][0]['field_feedback_to']['#language'];
+
+  $ranges = array();
+  foreach ($values['field_feedback'][$field_feedback_lang] as $key => $item) {
+    if (!is_numeric($key)) {
+      continue;
+    }
+    $ranges[] = array(
+      'from' => $item['field_feedback_from'][$field_from_lang][0]['value'],
+      'to' => $item['field_feedback_to'][$field_to_lang][0]['value'],
+    );
+  }
+  uasort($ranges, function($a, $b) {
+    if ($a['from'] == $b['from']) {
+      return 0;
+    }
+    return ($a['from'] < $b['from']) ? -1 : 1;
+  });
+  $interval = 0;
+  foreach ($ranges as $range) {
+    if ($range['from'] > $interval) {
+      $interval = $range['to'];
+    }
+    else {
+      form_set_error('', t('Ranges are wrong.'));
+      break;
+    }
+  }
+}
+
+function diplom_group_add_feedback_form_submit(&$form, &$form_state) {
+  $group = entity_metadata_wrapper('group', $form_state['build_info']['group']);
+  $feedback = $form_state['node'];
+  $group->field_group_feedback->set($feedback->nid);
+  $group->save();
 }

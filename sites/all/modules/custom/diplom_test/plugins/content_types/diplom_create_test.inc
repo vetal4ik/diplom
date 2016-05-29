@@ -8,8 +8,8 @@
 // Read by ctools.
 $plugin = array(
   'title' => t('Create test'),
-  'description' => t('Forn to create test.'),
-  'content_types' => array('diplom_quiz'),
+  'description' => t('Form to create test.'),
+  'content_types' => array('diplom_quiz_create'),
   'category' => array(t('Diplom'), -9),
   'render callback' => 'diplom_create_test_render',
   'required context' => new ctools_context_required(t('Group'), 'group'),
@@ -32,22 +32,15 @@ $plugin = array(
  *   Rendered pane.
  */
 function diplom_create_test_render($subtype, $conf, $args, $context) {
- $group = $context->data;
-  
-  module_load_include('inc', 'node', 'node.pages');
-  $node = new stdClass;
-  $node->type = 'quiz';
-  $node->language = LANGUAGE_NONE;
-
+  $group = $context->data;
   $form_state = array();
   $form_state['build_info'] = array(
-    'args' => array($node),
+    'args' => array(),
     'group' => $group,
   );
-
+  // Use module_load_include so that caches and stuff can know to load this.
+  form_load_include($form_state, 'inc', 'node', 'node.pages');
   $content_pane = new stdClass();
-  $content_pane->title = 'aaa';
-  $content_pane->content = drupal_build_form('quiz_node_form', $form_state);
-//  $content_pane->content = 'aaa';
+  $content_pane->content = drupal_build_form('diplom_test_action_form', $form_state);
   return $content_pane;
 }

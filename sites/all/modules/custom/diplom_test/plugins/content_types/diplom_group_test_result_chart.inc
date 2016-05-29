@@ -11,15 +11,15 @@ $plugin = array(
   'description' => t('Result chart.'),
   'content_types' => array('diplom_quiz_group_result_chart'),
   'category' => array(t('Diplom'), -9),
-  'render callback' => 'diplom_group_test_render',
-  'edit form' => 'diplom_create_question_form',
+  'render callback' => 'diplom_group_test_result_chart_render',
+  'edit form' => 'diplom_group_test_result_chart_form',
   'required context' => new ctools_context_required(t('Group'), 'group'),
 );
 
 /**
  * 'Edit form' callback for the content type.
  */
-function diplom_group_test_result_cahart_form($form, &$form_state) {
+function diplom_group_test_result_chart_form($form, &$form_state) {
   $allowed_types = list_allowed_values(field_info_field('field_test_type'));
   $conf = $form_state['conf'];
   $form['test_type'] = array(
@@ -36,7 +36,7 @@ function diplom_group_test_result_cahart_form($form, &$form_state) {
 /**
  * Submit callback for the example_text_edit_form().
  */
-function diplom_create_question_form_submit($form, &$form_state) {
+function diplom_group_test_result_chart_form_submit($form, &$form_state) {
   $form_state['conf']['test_type'] = $form_state['values']['test_type'];
 }
 
@@ -55,28 +55,55 @@ function diplom_create_question_form_submit($form, &$form_state) {
  * @return object
  *   Rendered pane.
  */
-function diplom_group_test_render($subtype, $conf, $args, $context) {
+function diplom_group_test_result_chart_render($subtype, $conf, $args, $context) {
   $group = $context->data;
   $wr = entity_metadata_wrapper('group', $group);
   $field_name = "field_{$conf['test_type']}";
-  if (!($node = $wr->{$field_name}->value())) {
-    // Create object to create question.
-    $node = new stdClass;
-    $node->type = 'quiz';
-    $node->language = LANGUAGE_NONE;
+  $node = $wr->{$field_name}->value();
+  $request = db_select('quiz_node_results', 'r')
+    ->fields('r', array('score'))
+//    ->condition('n.nid', 123)
+    ->execute();
+
+
+  $ranges = array(
+    '1-34' => 'F',
+    '35-59' => 'FX',
+    '60-63' => 'E',
+    '64-73' => 'D',
+    '74-81' => 'C',
+    '82-89' => 'B',
+    '90-100' => 'A',
+  );
+  $ranges_count = array();
+  while ($score = $request->fetchField()) {
+    foreach ($ranges as $range => $label) {
+      list($from, $to) = explode('-', $range);
+      if ($from <= $score && $score <= $to) {
+        $ranges_count[$label] = isset($ranges_count[$label]) ? $ranges_count[$label]++ : 1;
+        break;
+      }
+    }
   }
 
-  // Necessary form state args to build form.
-  $form_state = array();
-  $form_state['build_info'] = array(
-    'args' => array($node),
-    'test_type' => $conf['test_type'],
-    'group' => $group,
-  );
 
-  // Use module_load_include so that caches and stuff can know to load this.
-  form_load_include($form_state, 'inc', 'node', 'node.pages');
-  $content_pane = new stdClass();
-  $content_pane->content = drupal_build_form('quiz_node_form', $form_state);
-  return $content_pane;
+  if (!empty($ranges_count)) {
+    $settings['chart']['chartOne'] = array(
+      'header' => array_keys($ranges_count),
+      'rows' => array(array_values($ranges_count)),
+      'columns' => array('Fruit count'),
+      'chartType' => 'PieChart',
+      'containerId' =>  'test-result-chart',
+      'options' => array(
+        'forceIFrame' => FALSE,
+        'title' => 'Fruit count',
+        'width' => 800,
+        'height' => 400
+      )
+    );
+    draw_chart($settings);
+    $pane = new stdClass();
+    $pane->content = '<div id="test-result-chart"></div>';
+    return $pane;
+  }
 }

@@ -7,11 +7,11 @@
 
 // Read by ctools.
 $plugin = array(
-  'title' => t('Group tests'),
-  'description' => t('Display tests of group.'),
-  'content_types' => array('diplom_group_test'),
+  'title' => t('Group tests link.'),
+  'description' => t('Display links tests of group.'),
+  'content_types' => array('diplom_group_test_link'),
   'category' => array(t('Diplom'), -9),
-  'render callback' => 'diplom_group_test_render',
+  'render callback' => 'diplom_group_tests_links_render',
   'required context' => new ctools_context_required(t('Group'), 'group'),
 );
 
@@ -31,7 +31,7 @@ $plugin = array(
  * @return object
  *   Rendered pane.
  */
-function diplom_group_test_render($subtype, $conf, $args, $context) {
+function diplom_group_tests_links_render($subtype, $conf, $args, $context) {
   $group = $context->data;
   $wr = entity_metadata_wrapper('group', $group);
   $test_types = array(

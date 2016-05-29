@@ -7,11 +7,11 @@
 
 // Read by ctools.
 $plugin = array(
-  'title' => t('Group tests'),
-  'description' => t('Display links tests of group.'),
+  'title' => t('Group feedback link.'),
+  'description' => t('Display feedback link of group.'),
   'content_types' => array('diplom_group_test_link'),
   'category' => array(t('Diplom'), -9),
-  'render callback' => 'diplom_group_tests_links_render',
+  'render callback' => 'diplom_group_feedback_link_render',
   'required context' => new ctools_context_required(t('Group'), 'group'),
 );
 
@@ -31,31 +31,17 @@ $plugin = array(
  * @return object
  *   Rendered pane.
  */
-function diplom_group_tests_links_render($subtype, $conf, $args, $context) {
+function diplom_group_feedback_link_render($subtype, $conf, $args, $context) {
   $group = $context->data;
-  $wr = entity_metadata_wrapper('group', $group);
-  $test_types = array(
-    'field_attestation_test' => t('Attestation test'),
-    'field_skill_test' => t('Skill test'),
-  );
-  $items = array();
-  foreach ($test_types as $type_name => $type_title) {
-    $test = $wr->{$type_name}->value();
-    if (empty($test)) {
-      $title = t("Create '@type'.", array('@type' => $type_title));
-      $path = "group/{$group->gid}/test/create";
-      $options = array('query' => array('test_type' => str_replace('field_', '', $type_name)));
-      $items[] = l($title, $path, $options);
-    }
-    else {
-      $title = t("View '@type'.", array('@type' => $type_title));
-      $path = "node/{$test->nid}";
-      $items[] = l($title, $path);
-    }
-  }
-  if (!empty($items)) {
-    $pane = new stdClass();
-    $pane->content = theme('item_list', array('items' => $items));
-    return $pane;
-  }
+  $pane = new stdClass();
+  $pane->content = theme('html_tag', array(
+      'element' => array(
+          '#tag' => 'div',
+          '#attributes' => array(
+              'class' => 'activities-sidbar',
+          ),
+          '#value' => l(t('Feedback'), "group/{$group->gid}/feedback"),
+      ),
+  ));
+  return $pane;
 }

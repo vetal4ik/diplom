@@ -1,5 +1,9 @@
 <?php
 
+require 'diplom_test.actions.inc';
+require 'diplom_test.form.inc';
+require 'diplom_test.functions.inc';
+
 /**
  * @file
  * Main file of diplome user module.
@@ -17,6 +21,58 @@ function diplom_test_ctools_plugin_directory($owner, $plugin_type) {
   }
 }
 
+function diplom_test_theme($existing, $type, $theme, $path) {
+  return array(
+    'test_timer' => array(
+      'variables' => array('value' => 0),
+    ),
+  );
+}
+
+/**
+ * Render function of 'test_timer' theme.
+ */
+function theme_test_timer($variables) {
+  $output = '<div class="test-timer">';
+  $output .=    '<span class="label">';
+  $output .=      t('Timer:');
+  $output .=    '</span>';
+  $output .=    '<span class="value">';
+  $output .=      $variables['value'];
+  $output .=    '</span>';
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Implements hook_views_api().
+ */
+function diplom_test_views_api() {
+  return array(
+    'api' => 3,
+  );
+}
+
+/**
+ * Implements hook_views_data_alter().
+ */
+function diplom_test_views_data_alter(&$data) {
+  foreach (entity_get_info() as $entity_type => $info) {
+    if (isset($info['base table']) && isset($data[$info['base table']]['table'])) {
+      $data[$info['base table']]['diplom_views_bulk_operations'] = array(
+        'title' => $data[$info['base table']]['table']['group'],
+        'group' => t('Bulk operations (diplom-test)'),
+        'help' => t('Provide a checkbox to select the row for bulk operations.'),
+        'real field' => $info['entity keys']['id'],
+        'field' => array(
+          'handler' => 'views_diplom_bulk_operations_handler_field_operations',
+          'click sortable' => FALSE,
+        ),
+      );
+    }
+  }
+}
+
 /**
  * Implements hook_permission().
  */
@@ -29,49 +85,78 @@ function diplom_test_permission() {
   );
 }
 
+/**
+ * Implements hook_form_FORM_ID_alter().
+ */
+function diplom_test_form_multichoice_node_form_alter(&$form, &$form_state, $form_id) {
+  global $user;
+  if (!empty($form_state['build_info']['group'])) {
+    $form['field_group']['#access'] = FALSE;
+    $form['author']['name']['#default_value'] = $user->name;
+    $form['feedback']['#access'] = FALSE;
+    $form['actions']['submit']['#submit'][] = 'diplom_test_question_add_group_form_submit';
+  }
+}
+
+function diplom_test_question_add_group_form_submit(&$form, &$form_state) {
+  $question = entity_metadata_wrapper('node', $form_state['node']);
+  $question->field_group->set($form_state['build_info']['group']->gid);
+  $question->save();
+}
 
 /**
  * Implements hook_form_FORM_ID_alter().
  */
 function diplom_test_form_quiz_node_form_alter(&$form, &$form_state, $form_id) {
+  $unnecessary_fields = array(
+    'quiz_availability',
+    'summaryoptions',
+    'taking',
+    'remember_global',
+    'resultoptions',
+    'remember_settings',
+  );
+  foreach ($unnecessary_fields as $unnecessary_field) {
+    $form[$unnecessary_field]['#access'] = FALSE;
+  }
+  if (!empty($form_state['build_info']['test_type'])) {
+    $lang = $form['field_test_type']['#language'];
+    $form['field_test_type'][$lang]['#default_value'] = $form_state['build_info']['test_type'];
+    $form['field_test_type'][$lang]['#access'] = FALSE;
+  }
   if (!empty($form_state['build_info']['group'])) {
-    $group = $form_state['build_info']['group'];
-    $wrapper = entity_metadata_wrapper('group', $group);
+    $enabled = !empty($form['#node']->time_limit);
+    $form['timer'] = array(
+      '#title' => t('Enable timer'),
+      '#type' => 'checkbox',
+      '#default_value' => $enabled,
+    );
+    $form['timer_time'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Minutes'),
+      '#default_value' => $enabled ? ($form['#node']->time_limit / 60) : 0,
+      '#states' => array(
+        'visible' => array(
+          'input[name="timer"]' => array(
+            'checked' => TRUE,
+          ),
+        ),
+      ),
+    );
+    $form['actions']['submit']['#submit'][] = 'diplom_test_quiz_add_timer_form_submit';
     $form['actions']['submit']['#submit'][] = 'diplom_test_quiz_add_test_form_submit';
   }
+}
 
-
-
-  if (empty($form['nid']['#value'])) {
-    $dissable_fields = array(
-      'taking',
-      'remember_settings',
-      'quiz_availability',
-      'summaryoptions',
-      'resultoptions',
-    );
-
-    $group = entity_load('group', array(2));
-    if (!empty($group)) {
-      $group = reset($group);
-    }
-
-
-
-
+function diplom_test_quiz_add_timer_form_submit(&$form, &$form_state) {
+  $quiz = $form_state['node']->quiz;
+  if (!empty($form_state['values']['timer']) && isset($form_state['values']['timer_time'])) {
+    $quiz->time_limit = (int)$form_state['values']['timer_time'] * 60;
   }
   else {
-    $dissable_fields = array(
-      'taking',
-      'remember_settings',
-      'quiz_availability',
-//      'summaryoptions',
-//      'resultoptions',
-    );
+    $quiz->time_limit = 0;
   }
-  foreach ($dissable_fields as $field) {
-    $form[$field]['#access'] = FALSE;
-  }
+  entity_save('quiz', $quiz);
 }
 
 /**
@@ -79,31 +164,15 @@ function diplom_test_form_quiz_node_form_alter(&$form, &$form_state, $form_id) {
  */
 function diplom_test_quiz_add_test_form_submit(&$form, &$form_state) {
   if (!empty($form_state['build_info']['group'])) {
-    $group = entity_metadata_wrapper('group', $form_state['build_info']['group']);
+    // Generate field name to save test in group.
     $test = entity_metadata_wrapper('node', $form_state['node']);
     $test_id = $test->nid->value();
     $test_type = $test->field_test_type->value();
-    $field_name = "field_{$test_type}_test";
+    $field_name = "field_{$test_type}";
+
+    $group = entity_metadata_wrapper('group', $form_state['build_info']['group']);
     $group->{$field_name}->set($test_id);
     $group->save();
   }
 }
 
-/**
- * Implements hook_form_FORM_ID_alter().
- */
-function diplom_test_form_multichoice_node_form_alter(&$form, &$form_state) {
-  $i = 0;
-  $form['alternatives']['settings']['#access'] = FALSE;
-  while(isset($form['alternatives'][$i])) {
-    $form['alternatives'][$i]['advanced']['feedback_if_chosen']['#access'] = FALSE;
-    $form['alternatives'][$i]['advanced']['helper']['#access'] = FALSE;
-    $i++;
-  }
-//  $type = $form['#node']->type;
-//  if (array_key_exists($type, _quiz_question_get_implementations())) {
-//    $question = _quiz_question_get_instance($form['#node']);
-//    $quiz_question_form = $question->getNodeForm($form_state);
-//    $form = array_merge($quiz_question_form, $form);
-//  }
-}

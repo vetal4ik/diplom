@@ -11,15 +11,33 @@
  * @param $form_id
  */
 function diplom_user_form_alter(&$form, &$form_state, $form_id) {
-  $a = 1;
-  dpm($form_id);
 }
 
 
 function diplom_user_form_user_register_form_alter(&$form, &$form_state, $form_id) {
-  foreach (element_children($form['account']) as $field) {
-    $form['account'][$field]['#description'] = '';
-  }
-  $form['account']['roles']['#access'] = TRUE;
-  dpm($form);
+//  foreach (element_children($form['account']) as $field) {
+//    $form['account'][$field]['#description'] = '';
+//  }
+//  $form['account']['roles']['#access'] = TRUE;
+//  dpm($form);
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function diplom_user_menu() {
+  return array(
+    'manage-students/%node/user/%user/%' => array(
+      'title' => t('Activate/Deactivate user'),
+      'page callback' => 'meego_students_school_manage_student_page',
+      'page arguments' => array(1, 3, 4),
+      'access callback' => 'meego_students_activate_deactivate_student_access',
+      'access arguments' => array(1, 4),
+    ),
+  );
+}
+
+
+function diplom_user_views_bulk_operations_form_alter(&$form, &$form_state, &$vbo) {
 }
