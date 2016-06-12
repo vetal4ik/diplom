@@ -7,7 +7,7 @@
 
 // Read by ctools.
 $plugin = array(
-  'title' => t('Group feedback'),
+  'title' => t('Group feedback conf'),
   'description' => t('Form to create/edit group feedback.'),
   'content_types' => array('diplom_group_feedback_conf'),
   'category' => array(t('Diplom'), -9),
@@ -41,7 +41,6 @@ function diplom_group_feedback_conf_render($subtype, $conf, $args, $context) {
     $feedback->type = 'feedback';
     $feedback->language = LANGUAGE_NONE;
   }
-  module_load_include('inc', 'node', 'node.pages');
 
   // Necessary form state args to build form.
   $form_state = array();
@@ -49,6 +48,7 @@ function diplom_group_feedback_conf_render($subtype, $conf, $args, $context) {
     'args' => array($feedback),
     'group' => $group,
   );
+  form_load_include($form_state, 'inc', 'node', 'node.pages');
 
   $pane = new stdClass();
   $pane->content = drupal_build_form('feedback_node_form', $form_state);

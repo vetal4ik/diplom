@@ -1,6 +1,6 @@
 (function ($) {
 
-// Store our function as a property of Drupal.behaviors.
+    // Test timer.
     Drupal.behaviors.testTimer = {
         attach: function (context, settings) {
             var seconds = $('.test-timer .value').text();

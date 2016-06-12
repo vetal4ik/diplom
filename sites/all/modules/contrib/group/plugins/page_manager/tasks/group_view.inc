@@ -109,7 +109,7 @@ function group_group_view_page($group) {
   // Set the page title and canonical and shortlink head links. Copied verbatim
   // from group_page(). See that function for a more documented version.
   if ($set_head) {
-    drupal_set_title($group->label());
+//    drupal_set_title($group->label());
     $uri = entity_uri('group', $group);
     drupal_add_html_head_link(array('rel' => 'canonical', 'href' => url($uri['path'], $uri['options'])), TRUE);
     drupal_add_html_head_link(array('rel' => 'shortlink', 'href' => url($uri['path'], array_merge($uri['options'], array('alias' => TRUE)))), TRUE);

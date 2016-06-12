@@ -86,11 +86,11 @@ function diplom_group_remove_student($studend, $context) {
 function diplom_group_user_group($uid, $role_name = NULL) {
   $query = db_select('groups', 'g');
   $query->innerJoin('group_membership', 'gm', 'gm.gid = g.gid');
-//  $query->condition('gm.uid', $uid);
-//  if (!empty($role_name)) {
-//    $query->innerJoin('group_membership_role', 'gmr', 'gm.mid = gmr.mid');
-//    $query->condition('gmr.role', $role_name);
-//  }
+  $query->condition('gm.uid', $uid);
+  if (!empty($role_name)) {
+    $query->innerJoin('group_membership_role', 'gmr', 'gm.mid = gmr.mid');
+    $query->condition('gmr.role', $role_name);
+  }
   $query->fields('g', array('gid', 'title'));
   $results = array();
   $request = $query->execute();
@@ -120,7 +120,16 @@ function diplom_group_user_group($uid, $role_name = NULL) {
 
 
 
-
+function diplom_group_form_group_edit_courses_form_alter(&$form, &$form_state) {
+  $fields = array(
+    'field_attestation_test',
+    'field_skill_test',
+    'field_group_feedback',
+  );
+  foreach ($fields as $field) {
+    $form[$field]['#access'] = FALSE;
+  }
+}
 
 
 
@@ -168,8 +177,10 @@ function diplom_group_add_feedback_form_validate(&$form, &$form_state) {
 }
 
 function diplom_group_add_feedback_form_submit(&$form, &$form_state) {
+  $gid = $form_state['build_info']['group'];
   $group = entity_metadata_wrapper('group', $form_state['build_info']['group']);
   $feedback = $form_state['node'];
   $group->field_group_feedback->set($feedback->nid);
   $group->save();
+  $form_state['redirect'] = "group/{$gid}/feedback";
 }

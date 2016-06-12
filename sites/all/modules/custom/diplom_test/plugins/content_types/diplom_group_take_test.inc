@@ -63,6 +63,10 @@ function diplom_group_take_test_render($subtype, $conf, $args, $context) {
   $group = entity_metadata_wrapper('group', $context->data);
   $field = 'field_' . $conf['test_type'];
   $test = $group->{$field}->value();
+  if (!$test->status) {
+    drupal_access_denied();
+    exit;
+  }
   $result = diplom_test_get_user_result($test, $user->uid);
   if ($result->is_evaluated) {
     $output = t('Your score: @score', array('@score' => $result->score));

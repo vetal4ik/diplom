@@ -99,9 +99,11 @@ function diplom_test_form_multichoice_node_form_alter(&$form, &$form_state, $for
 }
 
 function diplom_test_question_add_group_form_submit(&$form, &$form_state) {
+  $gid = $form_state['build_info']['group']->gid;
   $question = entity_metadata_wrapper('node', $form_state['node']);
   $question->field_group->set($form_state['build_info']['group']->gid);
   $question->save();
+  $form_state['redirect'] = "group/{$gid}/questions";
 }
 
 /**
@@ -125,30 +127,43 @@ function diplom_test_form_quiz_node_form_alter(&$form, &$form_state, $form_id) {
     $form['field_test_type'][$lang]['#access'] = FALSE;
   }
   if (!empty($form_state['build_info']['group'])) {
-    $enabled = !empty($form['#node']->time_limit);
-    $form['timer'] = array(
-      '#title' => t('Enable timer'),
-      '#type' => 'checkbox',
-      '#default_value' => $enabled,
-    );
-    $form['timer_time'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Minutes'),
-      '#default_value' => $enabled ? ($form['#node']->time_limit / 60) : 0,
-      '#states' => array(
-        'visible' => array(
-          'input[name="timer"]' => array(
-            'checked' => TRUE,
+    $form['test_status'] = $form['options']['status'];
+    if (!empty($form_state['node']->quiz)) {
+      $enabled = !empty($form['#node']->time_limit);
+      $form['timer'] = array(
+        '#title' => t('Enable timer'),
+        '#type' => 'checkbox',
+        '#default_value' => $enabled,
+      );
+      $form['timer_time'] = array(
+        '#type' => 'textfield',
+        '#title' => t('Minutes'),
+        '#default_value' => $enabled ? ($form['#node']->time_limit / 60) : 0,
+        '#states' => array(
+          'visible' => array(
+            'input[name="timer"]' => array(
+              'checked' => TRUE,
+            ),
           ),
         ),
-      ),
-    );
-    $form['actions']['submit']['#submit'][] = 'diplom_test_quiz_add_timer_form_submit';
+      );
+      $form['number_of_random_questions'] = array(
+        '#title' => t('Number of random questions'),
+        '#type' => 'textfield',
+        '#default_value' => $form['#node']->number_of_random_questions,
+      );
+      $form['actions']['submit']['#submit'][] = 'diplom_test_quiz_add_properties_form_submit';
+    }
+    $form['#validate'][] = 'diplom_test_quiz_add_status_form_submit';
     $form['actions']['submit']['#submit'][] = 'diplom_test_quiz_add_test_form_submit';
   }
 }
 
-function diplom_test_quiz_add_timer_form_submit(&$form, &$form_state) {
+function diplom_test_quiz_add_status_form_submit(&$form, &$form_state) {
+  $form_state['values']['status'] = $form_state['values']['test_status'];
+}
+
+function diplom_test_quiz_add_properties_form_submit(&$form, &$form_state) {
   $quiz = $form_state['node']->quiz;
   if (!empty($form_state['values']['timer']) && isset($form_state['values']['timer_time'])) {
     $quiz->time_limit = (int)$form_state['values']['timer_time'] * 60;
@@ -156,6 +171,7 @@ function diplom_test_quiz_add_timer_form_submit(&$form, &$form_state) {
   else {
     $quiz->time_limit = 0;
   }
+  $quiz->number_of_random_questions = $form_state['values']['number_of_random_questions'];
   entity_save('quiz', $quiz);
 }
 
@@ -173,6 +189,14 @@ function diplom_test_quiz_add_test_form_submit(&$form, &$form_state) {
     $group = entity_metadata_wrapper('group', $form_state['build_info']['group']);
     $group->{$field_name}->set($test_id);
     $group->save();
+
+    $gid = $form_state['build_info']['group']->gid;
+    if ($form_state['build_info']['test_type'] == 'skill_test') {
+      $form_state['redirect'] = "group/{$gid}/skill-test";
+    }
+    else {
+      $form_state['redirect'] = "group/{$gid}/attestation-test";
+    }
   }
 }
 

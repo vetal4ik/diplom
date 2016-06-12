@@ -62,9 +62,8 @@ function diplom_group_test_result_chart_render($subtype, $conf, $args, $context)
   $node = $wr->{$field_name}->value();
   $request = db_select('quiz_node_results', 'r')
     ->fields('r', array('score'))
-//    ->condition('n.nid', 123)
+    ->condition('r.nid', $node->nid)
     ->execute();
-
 
   $ranges = array(
     '1-34' => 'F',
@@ -76,7 +75,8 @@ function diplom_group_test_result_chart_render($subtype, $conf, $args, $context)
     '90-100' => 'A',
   );
   $ranges_count = array();
-  while ($score = $request->fetchField()) {
+  while ($score = $request->fetchAssoc()) {
+    $score = $score['score'];
     foreach ($ranges as $range => $label) {
       list($from, $to) = explode('-', $range);
       if ($from <= $score && $score <= $to) {
@@ -91,12 +91,12 @@ function diplom_group_test_result_chart_render($subtype, $conf, $args, $context)
     $settings['chart']['chartOne'] = array(
       'header' => array_keys($ranges_count),
       'rows' => array(array_values($ranges_count)),
-      'columns' => array('Fruit count'),
+      'columns' => array('Result'),
       'chartType' => 'PieChart',
-      'containerId' =>  'test-result-chart',
+      'containerId' => 'test-result-chart',
       'options' => array(
         'forceIFrame' => FALSE,
-        'title' => 'Fruit count',
+        'title' => 'Result',
         'width' => 800,
         'height' => 400
       )

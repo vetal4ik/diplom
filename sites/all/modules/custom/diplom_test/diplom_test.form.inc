@@ -24,6 +24,8 @@ function diplom_test_task_form($form, &$form_state) {
     $question = $layout[$number];
     $question_node = node_load($question['nid'], $question['vid']);
     $question = _quiz_question_get_instance($question_node);
+    $wr_question = entity_metadata_wrapper('node', $question_node);
+    $body_qestion = $wr_question->body->value();
     $element = $question->getAnsweringForm($form_state, $result->result_id);
   }
 
@@ -45,6 +47,9 @@ function diplom_test_task_form($form, &$form_state) {
   $form['question_' . $number] = array(
     '#attributes' => array('id' => 'diplom-test-question'),
     '#type' => 'container',
+    'question' => array(
+      '#markup' => $body_qestion['safe_value'],
+    ),
     'answer' => isset($element['user_answer']) ? $element['user_answer'] : array(),
   );
 
@@ -103,12 +108,17 @@ function diplom_test_task_form_submit($form, &$form_state) {
     // Save question result.
     $answer = $form_state['input']['question_' . $current]['answer'];
     $question_node = node_load($question['nid'], $question['vid']);
-    $qi_instance = _quiz_question_response_get_instance($result->result_id, $question_node, array('user_answer' => $answer));
+    $qi_instance = _quiz_question_response_get_instance($result->result_id, $question_node, array(
+      'user_answer' => $answer,
+    ));
     $qi_instance->is_skipped = FALSE;
     $qi_instance->save();
     $bare_result = $qi_instance->toBareObject();
     $result->is_doubtful = FALSE;
-    quiz_store_question_result($test, $bare_result, array('set_msg' => TRUE, 'question_data' => array('number' => $current)));
+    quiz_store_question_result($test, $bare_result, array(
+      'set_msg' => TRUE,
+      'question_data' => array('number' => $current)
+    ));
   }
   else {
     // Skip question result.

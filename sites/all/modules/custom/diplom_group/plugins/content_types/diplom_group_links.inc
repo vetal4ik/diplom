@@ -32,12 +32,18 @@ $plugin = array(
  *   Rendered pane.
  */
 function diplom_group_links_render($subtype, $conf, $args, $context) {
+  global $user;
   $gid = $context->data->gid;
+  $group_membership = $context->data->getMember($user->uid);
   $items = array(
     'skill-test' => l(t('Skill test'), "group/{$gid}/skill-test"),
-    'attestation-test' => l(t('Attestation test'), "group/{$gid}/skill-test"),
+    'attestation-test' => l(t('Attestation test'), "group/{$gid}/attestation-test"),
     'feedback' => l(t('Feedback'), "group/{$gid}/feedback"),
   );
+  if (in_array('teacher', $group_membership->roles)) {
+    $items['questions'] = l(t('Questions'), "group/{$gid}/questions");
+  }
+
   $pane = new stdClass();
   $pane->content = theme('item_list', array('items' => $items));
   return $pane;

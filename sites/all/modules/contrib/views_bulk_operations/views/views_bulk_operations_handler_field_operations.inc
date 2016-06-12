@@ -318,17 +318,7 @@ class views_bulk_operations_handler_field_operations extends views_handler_field
    * the entity type that VBO is operating on.
    */
   public function get_entity_type() {
-    $base_table = $this->view->base_table;
-
-    // If the current field is under a relationship you can't be sure that the
-    // base table of the view is the base table of the current field.
-    // For example a field from a node author on a node view does have users as base table.
-    if (!empty($this->options['relationship']) && $this->options['relationship'] != 'none') {
-      $relationships = $this->view->display_handler->get_option('relationships');
-      $options = $relationships[$this->options['relationship']];
-      $data = views_fetch_data($options['table']);
-      $base_table = $options['table'];
-    }
+    $base_table = $this->table;
     // The base table is now known, use it to determine the entity type.
     foreach (entity_get_info() as $entity_type => $info) {
       if (isset($info['base table']) && $info['base table'] == $base_table) {

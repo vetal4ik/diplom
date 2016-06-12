@@ -11,6 +11,7 @@
  * @param $form_id
  */
 function diplom_user_form_alter(&$form, &$form_state, $form_id) {
+//  dpm($form_id);
 }
 
 

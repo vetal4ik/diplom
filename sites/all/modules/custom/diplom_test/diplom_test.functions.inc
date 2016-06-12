@@ -47,9 +47,9 @@ function diplom_test_check_user_result($result, $test) {
 */
 function diplom_test_get_user_result($test, $uid) {
   $result = entity_load('quiz_result', FALSE, array(
-  'nid' => $test->nid,
-  'vid' => $test->vid,
-  'uid' => $uid,
+    'nid' => $test->nid,
+    'vid' => $test->vid,
+    'uid' => $uid,
   ));
   $result = !empty($result) ? reset($result) : NULL;
 

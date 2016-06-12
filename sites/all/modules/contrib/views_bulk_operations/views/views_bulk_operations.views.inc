@@ -4,7 +4,6 @@
  * Implements hook_views_data_alter().
  */
 function views_bulk_operations_views_data_alter(&$data) {
-  $a = 1;
   foreach (entity_get_info() as $entity_type => $info) {
     if (isset($info['base table']) && isset($data[$info['base table']]['table'])) {
       $data[$info['base table']]['views_bulk_operations'] = array(

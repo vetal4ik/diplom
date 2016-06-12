@@ -19,7 +19,8 @@ $plugin = array(
 /**
  * Settings form.
  */
-function diplom_group_empty_field_form($form, &$form_state, $conf) {
+function diplom_group_field_form($form, &$form_state, $conf) {
+
   // User fields name.
   $options = db_select('field_config_instance', 'fci')
     ->fields('fci', array('field_name'))
@@ -44,7 +45,7 @@ function diplom_group_empty_field_form($form, &$form_state, $conf) {
 function diplom_group_field_access_callback($conf, $context) {
   $group = $context->data;
   foreach ($conf['fields'] as $field) {
-    if(!empty($group->$field)) {
+    if(empty($group->$field)) {
       return FALSE;
     }
   }
